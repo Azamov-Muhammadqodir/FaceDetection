@@ -1,46 +1,40 @@
 ﻿using FaceAiSharp;
-using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using static System.Net.Mime.MediaTypeNames;
 
 public  class Recognition
 {
-    public static async Task Start()
+    public static async Task Start(string path1, string path2)
     {
-        using var hc = new HttpClient();
-        var groupPhoto = await hc.GetByteArrayAsync(
-            "https://raw.githubusercontent.com/georg-jung/FaceAiSharp/master/examples/obama_family.jpg");
-        var img = SixLabors.ImageSharp.Image.Load<Rgb24>(groupPhoto);
-
         var det = FaceAiSharpBundleFactory.CreateFaceDetectorWithLandmarks();
         var rec = FaceAiSharpBundleFactory.CreateFaceEmbeddingsGenerator();
 
-        var faces = det.DetectFaces(img);
-        var first = faces.First();
-        var second = faces.Skip(1).First();
 
-        // AlignFaceUsingLandmarks is an in-place operation so we need to create a clone of img first
-        var secondImg = img.Clone();
-        rec.AlignFaceUsingLandmarks(img, first.Landmarks!);
-        rec.AlignFaceUsingLandmarks(secondImg, second.Landmarks!);
+        var img1 = SixLabors.ImageSharp.Image.Load<Rgb24>(path1);
+        var img2 = SixLabors.ImageSharp.Image.Load<Rgb24>(path2);
 
-        var embedding1 = rec.GenerateEmbedding(img);
-        var embedding2 = rec.GenerateEmbedding(secondImg);
+        var face1 = det.DetectFaces(img1).FirstOrDefault();
+        var face2 = det.DetectFaces(img2).FirstOrDefault();
+
+        rec.AlignFaceUsingLandmarks(img1, face1.Landmarks!);
+        rec.AlignFaceUsingLandmarks(img2, face2.Landmarks!);
+
+        var embedding1 = rec.GenerateEmbedding(img1);
+        var embedding2 = rec.GenerateEmbedding(img2);
 
         var dot = FaceAiSharp.Extensions.GeometryExtensions.Dot(embedding1, embedding2);
 
         Console.WriteLine($"Dot product: {dot}");
         if (dot >= 0.42)
         {
-            Console.WriteLine("Assessment: Both pictures show the same person.");
+            Console.WriteLine("Ikkalasi o'xshash");
         }
         else if (dot > 0.28 && dot < 0.42)
         {
-            Console.WriteLine("Assessment: Hard to tell if the pictures show the same person.");
+            Console.WriteLine("O'xshashlik kam");
         }
         else if (dot <= 0.28)
         {
-            Console.WriteLine("Assessment: These are two different people.");
+            Console.WriteLine("o'xshash emas");
         }
     }
 }
